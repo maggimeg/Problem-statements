@@ -1,0 +1,47 @@
+Problem 5: Matrix Islands with Diagonals
+Count the number of islands in a matrix of 0s and 1s. Islands are formed using horizontal, vertical, or diagonal connections.
+
+
+
+def count_islands_with_diagonals(matrix):
+    if not matrix or not matrix[0]:
+        return 0
+    
+    rows, cols = len(matrix), len(matrix[0])
+    visited = [[False] * cols for _ in range(rows)]
+    directions = [
+        (-1,  0), (1, 0), (0, -1), (0,  1),   # N, S, W, E 
+        (-1, -1), (-1, 1), (1, -1), (1, 1)    # NW, NE, SW, SE
+    ]
+    
+    def dfs(r, c):
+        stack = [(r, c)]
+        visited[r][c] = True
+        
+        while stack:
+            x, y = stack.pop()
+            for dx, dy in directions:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < rows and 0 <= ny < cols:
+                    if matrix[nx][ny] == 1 and not visited[nx][ny]:
+                        visited[nx][ny] = True
+                        stack.append((nx, ny))
+    
+    island_count = 0
+    for i in range(rows):
+        for j in range(cols):
+            if matrix[i][j] == 1 and not visited[i][j]:
+                dfs(i, j)
+                island_count += 1
+
+    return island_count
+if __name__ == "__main__":
+    example_matrix = [
+        [1, 1, 0, 0, 0],
+        [0, 1, 1, 0, 1],
+        [1, 0, 0, 1, 1],
+        [0, 0, 0, 0, 0],
+        [1, 0, 1, 0, 1]
+    ]
+    print("Number of islands:", count_islands_with_diagonals(example_matrix))
+
