@@ -1,0 +1,156 @@
+Mini Interpreter
+Build a simple interpreter to evaluate let variable declarations and if conditions from input strings.
+
+
+import re
+import ast
+import operator
+
+class MiniInterpreter:
+    def __init__(self):
+        self.variables = {}
+
+    def eval_expr(self, expr):
+        try:
+            node = ast.parse(expr, mode='eval')
+            return self._eval_ast(node.body)
+        except Exception as e:
+            raise ValueError(f"Invalid expression: {expr}. Error: {e}")
+
+    def _eval_ast(self, node):
+        if isinstance(node, ast.Num):
+            return node.n
+        elif isinstance(node, ast.Constant):  # For Python 3.8+
+            return node.value
+        elif isinstance(node, ast.Name):
+            if node.id in self.variables:
+                return self.variables[node.id]
+            else:
+                raise ValueError(f"Undefined variable: {node.id}")
+        elif isinstance(node, ast.BinOp):
+            left = self._eval_ast(node.left)
+            right = self._eval_ast(node.right)
+            return self._binop(node.op, left, right)
+        elif isinstance(node, ast.UnaryOp):
+            operand = self._eval_ast(node.operand)
+            return self._unaryop(node.op, operand)
+        elif isinstance(node, ast.BoolOp):
+            values = [self._eval_ast(v) for v in node.values]
+            return self._boolop(node.op, values)
+        elif isinstance(node, ast.Compare):
+            left = self._eval_ast(node.left)
+            results = []
+            for op, comparator in zip(node.ops, node.comparators):
+                right = self._eval_ast(comparator)
+                results.append(self._compareop(op, left, right))
+                left = right
+            return all(results)
+        else:
+            raise ValueError(f"Unsupported expression element: {ast.dump(node)}")
+
+    def _binop(self, op, left, right):
+        ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.Mod: operator.mod,
+            ast.BitAnd: operator.and_,
+            ast.BitOr: operator.or_,
+            ast.BitXor: operator.xor,
+            ast.LShift: operator.lshift,
+            ast.RShift: operator.rshift,
+        }
+        op_type = type(op)
+        if op_type in ops:
+            return ops[op_type](left, right)
+        else:
+            raise ValueError(f"Unsupported binary operator: {op}")
+
+    def _unaryop(self, op, operand):
+        ops = {
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+            ast.Not: operator.not_,
+            ast.Invert: operator.invert,
+        }
+        op_type = type(op)
+        if op_type in ops:
+            return ops[op_type](operand)
+        else:
+            raise ValueError(f"Unsupported unary operator: {op}")
+
+    def _boolop(self, op, values):
+        if isinstance(op, ast.And):
+            return all(values)
+        elif isinstance(op, ast.Or):
+            return any(values)
+        else:
+            raise ValueError(f"Unsupported boolean operator: {op}")
+
+    def _compareop(self, op, left, right):
+        ops = {
+            ast.Eq: operator.eq,
+            ast.NotEq: operator.ne,
+            ast.Lt: operator.lt,
+            ast.LtE: operator.le,
+            ast.Gt: operator.gt,
+            ast.GtE: operator.ge,
+            ast.Is: operator.is_,
+            ast.IsNot: operator.is_not,
+        }
+        op_type = type(op)
+        if op_type in ops:
+            return ops[op_type](left, right)
+        else:
+            raise ValueError(f"Unsupported comparison operator: {op}")
+
+    def interpret(self, line):
+        line = line.strip()
+        if line.startswith("let "):
+            m = re.match(r"let\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)", line)
+            if not m:
+                raise ValueError("Invalid let statement syntax.")
+            var = m.group(1)
+            expr = m.group(2)
+            val = self.eval_expr(expr)
+            self.variables[var] = val
+            return f"Variable '{var}' set to {val}"
+
+        # Handle if statement
+        if line.startswith("if "):
+            m = re.match(r"if\s+(.+)\s+then\s+(.+?)\s+else\s+(.+)", line)
+            if not m:
+                raise ValueError("Invalid if statement syntax. Use: if CONDITION then EXPR else EXPR")
+            condition_expr = m.group(1)
+            then_expr = m.group(2)
+            else_expr = m.group(3)
+
+            condition = self.eval_expr(condition_expr)
+            if condition:
+                return self.eval_expr(then_expr)
+            else:
+                return self.eval_expr(else_expr)
+
+        # Otherwise, evaluate a standalone expression
+        return self.eval_expr(line)
+
+
+if __name__ == "__main__":
+    interpreter = MiniInterpreter()
+    print("Mini Interpreter - supports 'let', 'if', and expressions")
+    print("Examples:")
+    print("  let x = 5")
+    print("  if x > 3 then 10 else 20")
+    print("  3 + 4 * 2")
+    print("Type 'exit' or 'quit' to stop.")
+    while True:
+        try:
+            line = input(">>> ")
+            if line.strip().lower() in {"exit", "quit"}:
+                break
+            result = interpreter.interpret(line)
+            print(result)
+        except Exception as e:
+            print("Error:", e)
+
