@@ -1,0 +1,61 @@
+ Problem 2: Alien Dictionary
+Given a sorted list of words from an alien language, determine the character order used in that language.
+
+def dfs(u, graph, s, c, ans):
+    # Mark the node as visited and part of the current recursion stack
+    s[u] = c[u] = 1
+
+    for v in range(26):
+        if graph[u][v]:
+            if not s[v]:
+                # Recurse and check for cycle
+                if not dfs(v, graph, s, c, ans):
+                    return False
+            elif rec[v]:
+                return False
+
+    
+    ans.append(chr(ord('a') + u))
+    rec[u] = 0 
+    return True
+
+def findOrder(words):
+    graph = [[0 for _ in range(26)] for _ in range(26)]
+    exist = [0] * 26
+    s = [0] * 26
+    c = [0] * 26
+    ans = []
+
+    for word in words:
+        for ch in word:
+            exist[ord(ch) - ord('a')] = 1
+
+    for i in range(len(words) - 1):
+        a, b = words[i], words[i + 1]
+        n, m = len(a), len(b)
+        ind = 0
+
+        while ind < n and ind < m and a[ind] == b[ind]:
+            ind += 1
+
+        if ind != n and ind == m:
+            return ""  # Invalid case
+
+        if ind < n and ind < m:
+            graph[ord(a[ind]) - ord('a')][ord(b[ind]) - ord('a')] = 1
+
+    for i in range(26):
+        if exist[i] and not vis[i]:
+            if not dfs(i, graph, s, c, ans):
+                return ""
+
+    return ''.join(reversed(ans))
+
+
+words = ["baa", "abcd", "abca", "cab", "cad"]
+order = findOrder(words)
+
+if not order:
+    print("No Ordering Possible")
+else:
+    print(order)
